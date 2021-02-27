@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
-import MyModal from './MyModal';
+import Header from './Header';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
-    <MyModal />
+        <Header />
+        <App />
   </React.StrictMode>,
   document.getElementById('root')
 );

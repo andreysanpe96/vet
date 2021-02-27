@@ -1,140 +1,154 @@
 import React, { useState, useEffect } from "react";
-import { Button, Container} from "react-bootstrap";
-import { isEmpty, size } from "lodash";
+import { Button, Container, Table} from "react-bootstrap";
+import { size } from "lodash";
 import { addDocument, getCollection, updateDocument, deleteDocument } from "./actions";
+import MyModal from "./MyModal";
+import Patient from "./Patient.js"
 
 function App() {
-  const [task, setTask] = useState("")
-  const [tasks, setTasks] = useState([])
+  const [patient, setPatient] = useState(new Patient("","","","","","","",""))
+  const [patients, setPatients] = useState([])
   const [editMode, setEditMode] = useState(false)
   const [id, setid] = useState("")
   const [error, setError] = useState(null)
+  const [show, setShow] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     (async () => {
       const result  = await getCollection("vetPatients")
-      result.statusResponse && setTasks(result.data)
+      result.statusResponse && setPatients(result.data)
     })()
   }, [])
 
-  const validForm = () => {
-    let isValid = true
-    setError(null)
+  var thPetStyle = {
+    background: "#75cfb8"
+  };
 
-    if(isEmpty(task)){
-      setError("Debes agregar una tarea")
-      isValid = false
-    }
-    return isValid
-  }
+  var thOwnerStyle = {
+    background: "#bbdfc8"
+  };
 
-  const addTask = async(e) => {
+  const addPatient = async(e) => {
     e.preventDefault()
-    
-    if(!validForm())
-    {
-      return
-    }    
-    const result = await addDocument("vetPatients",{ name: task})
+
+    const result = await addDocument("vetPatients",patient)
     if(!result.statusResponse){
       setError(result.error)
       return
     }
-    setTasks([...tasks, {id: result.data.id, name: task}])
+    setPatients([...patients, {id: result.data.id, ...patient}])
 
-    setTask("")
+    setPatient(new Patient("","","","","","","",""))
+    setShow(false)
   }
 
-  const deleteTask = async(id) => {
-    const result = await deleteDocument("vetPatients",id)
+  const deletePatient = async() => {
+    const result = await deleteDocument("vetPatients",patient.id)
     if(!result.statusResponse){
       setError(result.error)
       return
     }
-    setTasks(tasks.filter(task => task.id !== id))
+    setPatients(patients.filter(thePatient => thePatient.id !== patient.id))
+    setShowDeleteModal(false)
   }
 
-  const editTask = (theTask) => {
-    setTask(theTask.name)
+  const showDeleteConfirmation = async(patient) => {
+    setPatient(patient)
+    setShowDeleteModal(true)
+  }
+
+  const editPatient = (patient) => {
+    setPatient(patient)
     setEditMode(true)
-    setid(theTask.id)
+    setid(patient.id)
+    setShow(true)
   }
 
-  const saveTask = async(e) => {
+  const savePatient = async(e) => {
     e.preventDefault()
-    if(!validForm())
-    {
-      return
-    }
-    const result = await updateDocument("vetPatients", id, {name: task})
+    const result = await updateDocument("vetPatients", id, patient)
 
     if(!result.statusResponse){
       setError(result.error)
       return
     }
-    const editedTasks = tasks.map(taskItem => taskItem.id === id ? {id, name : task} : taskItem )
-    setTasks(editedTasks)
+    const editedPatients = patients.map(thePatient => thePatient.id === id ? {...patient, id} : thePatient )
+    setPatients(editedPatients)
+    setShow(false)
     setEditMode(false)
-    setTask("")
+    setPatient(new Patient("","","","","","","",""))
     setid("")
   }
 
   return (
-    <Container>
-      <h1>Tareas</h1>
-      <hr />
+    
+    <Container responsive="true">
+      {<MyModal patient = {patient} setPatient = {setPatient} addPatient={addPatient} 
+      savePatient={savePatient} editMode={editMode} setEditMode={setEditMode} 
+      show={show} setShow={setShow} showDeleteModal = {showDeleteModal} 
+      setShowDeleteModal = {setShowDeleteModal} deletePatient={deletePatient}/>}
+      <hr/>
       <div className="row">
-        <div className="col-8">
-        <h4 className="text-center">Lista de Tareas</h4>
+        <div className="col">
+        <h4 className="text-center">Patients</h4>
+          
+
+        <Table  striped bordered hover responsive="sm">
+          <thead>
+          <tr>
+          <th colSpan="4" style = {thPetStyle} className="text-center">Pet</th>
+          <th colSpan="4" style = {thOwnerStyle} className="text-center">Owner</th>
+          </tr>
+            <tr>
+              <th style = {thPetStyle}>Name</th>
+              <th style = {thPetStyle}>Type</th>
+              <th style = {thPetStyle}>Race</th>
+              <th style = {thPetStyle}>Date of birth</th>
+              <th style = {thOwnerStyle}>Full name</th>
+              <th style = {thOwnerStyle}>Phone</th>
+              <th style = {thOwnerStyle}>address</th>
+              <th style = {thOwnerStyle}>email</th>
+              <th style = {{background:"#9fb8ad"}} className="text-center" >Actions</th>
+            </tr>
+          </thead>
+          <tbody>
           {
-            size(tasks) > 0 ? (
-            <ul className="list-group">
-              { 
-                tasks.map((task) => (
-                  <li className="list-group-item">
-                  <span className="lead">{task.name}</span>
-                    <button 
-                     className="btn btn-danger btn-sm float-right mx-2"
-                     onClick = {() => deleteTask(task.id)}
-                    >
-                      Eliminar
-                    </button>
-                    <button 
-                      className="btn btn-primary btn-sm float-right"
-                      onClick = {() => editTask(task)}
-                    >
-                      Editar
-                    </button>
-                </li>
+            size(patients) > 0 ? (
+              patients.map((patient) => (
+                  <tr>
+                  <td>{patient.name}</td>
+                  <td>{patient.type}</td>
+                  <td>{patient.race}</td>
+                  <td>{patient.birthDate}</td>
+                  <td>{patient.OwnerName}</td>
+                  <td>{patient.phone}</td>
+                  <td>{patient.address}</td>
+                  <td>{patient.email}</td>
+                  <td>
+                  <Button variant="danger sm mx-3" onClick = {() => showDeleteConfirmation(patient)}>
+                    Delete
+                  </Button>
+                  <Button variant="primary sm " onClick = {() => editPatient(patient)}>
+                    Edit
+                  </Button>
+                   </td>
+                </tr>
                 ))
-              }         
-            </ul>
             ):(
-             <li className="list-group-item">Aun no hay tareas</li>
+              <tr >
+                <td colSpan="4" >No patients.</td>
+              </tr>
             )
-            
           }
+          </tbody>
+        </Table>
+        
         </div>
-        <div className="col-4">
-          <h4 className="text-center">{editMode ? "Editar Tarea" : "Agregar tarea"}</h4>
-          <form onSubmit={editMode ? saveTask : addTask}>
-            {
-              error && <span className = "text-danger">{error}</span>
-            }
-            <input 
-            type="text" className="form-control mb-2" placeholder="Ingrese el nombre de la tarea"
-            onChange={(text) => setTask(text.target.value)}
-            value={task}
-            />
-          <button 
-            className={editMode ? "btn btn-warning btn-block" : "btn btn-success btn-block"}
-            type="submit"
-          >
-            { editMode ? "Guardar" : "Agregar"}
-          </button>
-          </form>
-        </div>
+        
       </div>
+      
+      <hr/>
     </Container>
 
     
